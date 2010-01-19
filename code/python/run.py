@@ -219,6 +219,8 @@ class GetHands:
             external_color=(0, 255, 0), hole_color=(0, 255, 0), max_level=1,
             thickness=3, line_type=3, offset=(0, 0))
 
+
+    def find_limbs(self, contours):
         blobs = []
         while contours:
             (i, center, radius) = cv.MinEnclosingCircle(contours)
@@ -227,8 +229,27 @@ class GetHands:
 
         blobs.sort()
         blobs.reverse()
-        for (r, c) in blobs[:3]:
+        return blobs[:3]
+
+
+    def draw_limbs(self, image, limbs):        
+        for (r, c) in limbs:
             cv.Circle(self.result, c, r, (0, 0, 255))
+
+    def make_sound(self, limbs):
+        # sort by x position of center
+        sorted_limbs = sorted(limbs, key=lambda x:(x[1][0], x[0]))
+        if len(limbs) == 3:
+            [left_hand, head, right_hand] = limbs
+            print left_hand
+        elif len(limbs) == 2:
+            [left_hand, right_hand] = limbs
+            print left_hand
+        elif len(limbs) == 1:
+            [head] = limbs
+            print head
+        else:
+            return
 
     def combine_images(self, images):
         comb_width = self.smallwidth * XWINDOWS
@@ -250,19 +271,18 @@ class GetHands:
 
 
     def init_loop(self):
-        face = None
-        while not face:
-            print "no face..."
+        counter = 10
+        while counter > 0:
             self.orig = cv.QueryFrame(self.capture)
             #cv.PyrDown( self.orig, self.small, 7 )
             cv.Resize(self.orig, self.small)
             cv.CvtColor(self.small, self.bw, cv.CV_BGR2GRAY)
             face = self.find_face(self.bw)
+            if face:
+                self.update_histogram(face)
+                counter -= 1
             cv.ShowImage('Skin Detection', self.orig )
             cv.WaitKey(40)
-        print  "face!"
-        self.update_histogram(face)
-
 
 
     def main_loop(self):
@@ -297,7 +317,11 @@ class GetHands:
         cv.Copy(self.small, self.result, morphed)
         contours = self.find_contours(morphed)
         self.draw_contours(self.result, contours)
+        limbs = self.find_limbs(contours)
+        self.draw_limbs(self.result, limbs)
         presentation.append(self.result)
+        
+        make_sound(limbs)
         
         # combine and show the results
         combined = self.combine_images(presentation)
