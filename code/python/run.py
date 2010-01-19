@@ -20,12 +20,14 @@ XWINDOWS = 3
 FACE_BORDER = 0.2
 HUEBINS = 30
 SATBINS = 32
+OSC_PORT = 6666
 
 
 import cv
 import time
 import sys
 import math
+import osc
 
 def hue_histogram_as_image(hist):
     """ Returns a nice representation of a hue histogram """
@@ -71,6 +73,7 @@ class GetHands:
 
 
     def __init__(self):
+        osc.init()
         self.threshold_value = THRESH
         self.capture = self.getCam(CAMERAID)
         self.hc = cv.Load(HAARCASCADE)
@@ -221,6 +224,7 @@ class GetHands:
 
 
     def find_limbs(self, contours):
+        """ return the 3 biggest contours """
         blobs = []
         while contours:
             (i, center, radius) = cv.MinEnclosingCircle(contours)
@@ -232,26 +236,34 @@ class GetHands:
         return blobs[:3]
 
 
-    def draw_limbs(self, image, limbs):        
+    def draw_limbs(self, image, limbs):
+        """ draw limb positions with circles into a image """        
         for (r, c) in limbs:
             cv.Circle(self.result, c, r, (0, 0, 255))
 
+
     def make_sound(self, limbs):
+        """ translate limb positions to osc signals """
         # sort by x position of center
         sorted_limbs = sorted(limbs, key=lambda x:(x[1][0], x[0]))
         if len(limbs) == 3:
             [left_hand, head, right_hand] = limbs
-            print left_hand
         elif len(limbs) == 2:
             [left_hand, right_hand] = limbs
-            print left_hand
         elif len(limbs) == 1:
             [head] = limbs
-            print head
+            left_hand = right_hand = head
         else:
             return
 
+        left = 100 - int(left_hand[1][1] / self.smallheight * 100)
+        right = 100 - int(right_hand[1][1] / self.smallheight * 100)
+        osc.sendMsg("/left", [left], "127.0.0.1", OSC_PORT)
+        osc.sendMsg("/right", [right], "127.0.0.1", OSC_PORT)
+        
+
     def combine_images(self, images):
+        """ render a list of images into one opencv frame """
         comb_width = self.smallwidth * XWINDOWS
         comb_height = self.smallheight * int(math.ceil(len(images) / float(XWINDOWS)))
         self.combined = cv.CreateImage((comb_width, comb_height), cv.IPL_DEPTH_8U, 3)
@@ -271,6 +283,7 @@ class GetHands:
 
 
     def init_loop(self):
+        """ let histogram build up for a while to get it stable """
         counter = 10
         while counter > 0:
             self.orig = cv.QueryFrame(self.capture)
@@ -321,7 +334,7 @@ class GetHands:
         self.draw_limbs(self.result, limbs)
         presentation.append(self.result)
         
-        make_sound(limbs)
+        self.make_sound(limbs)
         
         # combine and show the results
         combined = self.combine_images(presentation)
