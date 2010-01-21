@@ -7,14 +7,14 @@ http://gijs.pythonic.nl
 requires opencv 2.0 + new python api
 """
 
-CAMERAID=-2
-HAARCASCADE="/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
-#HAARCASCADE="/usr/local/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
+CAMERAID=1
+#HAARCASCADE="/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
+HAARCASCADE="/usr/local/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
 MOVIE="/home/gijs/Work/uva/afstuderen/data/movie/heiligenacht.mp4"
 STORE=False
 OUTPUT="/home/gijs/testje.mp4"
 FPS = 1000/25
-SCALING = 1
+SCALING = 2
 THRESH = 80
 XWINDOWS = 3
 FACE_BORDER = 0.2
