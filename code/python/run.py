@@ -7,20 +7,23 @@ http://gijs.pythonic.nl
 requires opencv 2.0 + new python api
 """
 
-CAMERAID=1
+# CHANGE ME
+CAMERAID=1 # -1 for auto, -2 for video
 #HAARCASCADE="/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
-HAARCASCADE="/usr/local/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
-MOVIE="/home/gijs/Work/uva/afstuderen/data/movie/heiligenacht.mp4"
-STORE=False
-OUTPUT="/home/gijs/testje.mp4"
-FPS = 1000/25
-SCALING = 2
-THRESH = 80
-XWINDOWS = 3
-FACE_BORDER = 0.2
-HUEBINS = 30
-SATBINS = 32
-OSC_PORT = 6666
+HAARCASCADE="/usr/local/share/opencv/haarcascades/haarcascade_frontalface_default.xml" # where to find haar cascade file for face detection
+MOVIE="/home/gijs/Work/uva/afstuderen/data/movie/heiligenacht.mp4" # what movie to read
+STORE=False # write output video?
+OUTPUT="/home/gijs/testje.mp4" # where to write output video
+OSC_PORT = 6666 # where to send the osc data
+
+# Internal parameters
+THRESH = 80 # starting treshhold
+FPS = 25 # target FPS
+HUEBINS = 30 # how many bins for hue histogram
+SATBINS = 32 # how many bins for saturation histogram
+XWINDOWS = 3 # how many windows on x axe
+WORKING_HEIGHT = 200 # size of image to work with, 300 is okay
+FACE_BORDER = 0.2 # border of face to cut of. 0.2 is 60% of face remaining
 
 
 import cv
@@ -28,6 +31,8 @@ import time
 import sys
 import math
 import osc
+
+
 
 def hue_histogram_as_image(hist):
     """ Returns a nice representation of a hue histogram """
@@ -51,44 +56,48 @@ def hue_histogram_as_image(hist):
     return histimg
 
 
+class Source:
+    def __init__(self, id, flip=True):
+        self.flip = flip
+        if id == -2:
+            self.capture = cv.CaptureFromFile(MOVIE)
+        else:
+            self.capture = cv.CaptureFromCAM(id)
+
+    def print_info(self):
+        for prop in [ cv.CV_CAP_PROP_POS_MSEC, cv.CV_CAP_PROP_POS_FRAMES,
+                cv.CV_CAP_PROP_POS_AVI_RATIO, cv.CV_CAP_PROP_FRAME_WIDTH,
+                cv.CV_CAP_PROP_FRAME_HEIGHT, cv.CV_CAP_PROP_FPS,
+                cv.CV_CAP_PROP_FOURCC, cv.CV_CAP_PROP_BRIGHTNESS,
+                cv.CV_CAP_PROP_CONTRAST, cv.CV_CAP_PROP_SATURATION,
+                cv.CV_CAP_PROP_HUE]:
+            print cv.GetCaptureProperty(capture, prop)
+
+    def grab_frame(self):
+        self.frame = cv.QueryFrame(self.capture)
+        if not self.frame:
+            print "can't grap frame, or end of movie. Bye bye."
+            sys.exit(2)
+        if self.flip:
+            cv.Flip(self.frame, None, 1)
+        return self.frame
+ 
 
 class GetHands:
-    def getCam(self, id):
-        if id == -2:
-            capture = cv.CaptureFromFile(MOVIE)
-        else:
-            capture = cv.CaptureFromCAM(id)
-        print cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_POS_MSEC)
-        print cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_POS_FRAMES)
-        print cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_POS_AVI_RATIO)
-        print cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_FRAME_WIDTH)
-        print cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_FRAME_HEIGHT)
-        print cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_FPS)
-        print cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_FOURCC)
-        print cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_BRIGHTNESS)
-        print cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_CONTRAST)
-        print cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_SATURATION)
-        print cv.GetCaptureProperty(capture, cv.CV_CAP_PROP_HUE)
-        return capture
-
-
     def __init__(self):
         osc.init()
+        self.source = Source(CAMERAID)
         self.threshold_value = THRESH
-        self.capture = self.getCam(CAMERAID)
         self.hc = cv.Load(HAARCASCADE)
         self.ms = cv.CreateMemStorage()
 
-        self.orig = cv.QueryFrame(self.capture)
-        if not self.orig:
-            print "can't grap frame, check camera"
-            sys.exit(2)
+        self.orig = self.source.grab_frame()
 
         self.width = self.orig.width
         self.height = self.orig.height
         self.size = (self.width, self.height)
-        self.smallwidth = int(self.width/SCALING)
-        self.smallheight = int(self.height/SCALING)
+        self.smallheight = WORKING_HEIGHT
+        self.smallwidth = int(self.width * self.smallheight/self.height * 1.0)
         self.smallsize = (self.smallwidth, self.smallheight)
 
         # alloc mem for images
@@ -98,7 +107,6 @@ class GetHands:
         self.hsv = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 3)
         self.hue = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
         self.sat = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
-        self.val = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
         self.bp = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
         self.scaled = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
         self.th = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
@@ -107,11 +115,6 @@ class GetHands:
         self.temp3 = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 3)
         self.result = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 3)
         self.hist_image = cv.CreateImage((320,200), cv.IPL_DEPTH_8U, 1)
-        self.scaled_c = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 3)
-        self.hue_c = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 3)
-        self.sat_c = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 3)
-        self.th_c = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 3)
-        self.morphed_c = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 3)
 
      
         # make matrix for erode/dilate
@@ -130,11 +133,6 @@ class GetHands:
         self.hist = cv.CreateHist([HUEBINS, SATBINS], cv.CV_HIST_ARRAY,
             [[0, 180], [0, 255]], 1)
 
-        # initalize 
-        #cv.CvtColor(self.small, self.bw, cv.CV_BGR2GRAY)
-        #cv.CvtColor(self.small, self.hsv, cv.CV_BGR2HSV)
-        #cv.CalcArrHist([self.hue, self.sat], self.hist)
- 
         # video writer
         if STORE:
             self.writer = cv.CreateVideoWriter(OUTPUT,
@@ -162,22 +160,29 @@ class GetHands:
         return False
 
 
-    def update_histogram(self, face):
+    def face_region(self, face, border):
         (x, y, w, h) = face
-        x2 = int(x+w*FACE_BORDER)
-        y2 = int(y+h*FACE_BORDER)
-        w2 = int(w-w*FACE_BORDER*2)
-        h2 = int(h-h*FACE_BORDER*2)
+        x2 = int(x+w*border)
+        y2 = int(y+h*border)
+        w2 = int(w-w*border*2)
+        h2 = int(h-h*border*2)
+        return (x2, y2, w2, h2)
 
-        cv.SetImageROI(self.hue, (x2, y2, w2, h2))
-        cv.SetImageROI(self.sat, (x2, y2, w2, h2))
+
+    def draw_face(self, image, face, sub_face):
+        (x, y, w, h) = face
+        cv.Rectangle(image, (x, y), (x+w, y+h), (255, 0, 0))
+        (x, y, w, h) = sub_face
+        cv.Rectangle(image, (x, y), (x+w, y+h), (128, 150, 0))
+ 
+
+    def update_histogram(self, region):
+        cv.SetImageROI(self.hue, region)
+        cv.SetImageROI(self.sat, region)
         cv.CalcArrHist([self.hue, self.sat], self.hist, 1)
         cv.NormalizeHist(self.hist, 255)
         cv.ResetImageROI(self.hue)
         cv.ResetImageROI(self.sat)
-
-        cv.Rectangle(self.visualize, (x, y), (x+w, y+h), (255, 0, 0))
-        cv.Rectangle(self.visualize, (x2, y2), (x2+w2, y2+h2), (128, 150, 0))
 
 
     def backproject(self):
@@ -219,8 +224,8 @@ class GetHands:
 
     def draw_contours(self, image, contours):
         cv.DrawContours(img=self.result, contour=contours,
-            external_color=(0, 255, 0), hole_color=(0, 255, 0), max_level=1,
-            thickness=3, line_type=3, offset=(0, 0))
+            external_color=(50, 200, 50), hole_color=(50, 200, 50), max_level=1,
+            thickness=1, line_type=1, offset=(0, 0))
 
 
     def find_limbs(self, contours):
@@ -238,28 +243,52 @@ class GetHands:
 
     def draw_limbs(self, image, limbs):
         """ draw limb positions with circles into a image """        
-        for (r, c) in limbs:
+        [left_hand, head, right_hand] = limbs
+
+        font = cv.InitFont(cv.CV_FONT_HERSHEY_SIMPLEX, 1, 1) 
+
+        if left_hand:
+            cv.PutText(image, 'L', left_hand[1], font, (255, 255, 255))
+
+        if head:
+            cv.PutText(image, 'H', head[1], font, (255, 255, 255))
+
+        if right_hand:
+            cv.PutText(image, 'R', right_hand[1], font, (255, 255, 255))
+
+        for (r, c) in [x for x in limbs if x]:
             cv.Circle(self.result, c, r, (0, 0, 255))
 
 
-    def make_sound(self, limbs):
-        """ translate limb positions to osc signals """
+    def sort_limbs(self, limbs):
+        """ guess the limb type, and sort them lefthand, head, righthand """
+        left_hand = None
+        right_hand = None
+        head = None
+
         # sort by x position of center
-        sorted_limbs = sorted(limbs, key=lambda x:(x[1][0], x[0]))
+        sorted_limbs = sorted(limbs, key=lambda x: (x[1][0], x[0]))
         if len(limbs) == 3:
-            [left_hand, head, right_hand] = limbs
+            [left_hand, head, right_hand] = sorted_limbs
+
         elif len(limbs) == 2:
             [left_hand, right_hand] = limbs
         elif len(limbs) == 1:
             [head] = limbs
             left_hand = right_hand = head
-        else:
-            return
 
-        left = 100 - int(left_hand[1][1] / self.smallheight * 100)
-        right = 100 - int(right_hand[1][1] / self.smallheight * 100)
-        osc.sendMsg("/left", [left], "127.0.0.1", OSC_PORT)
-        osc.sendMsg("/right", [right], "127.0.0.1", OSC_PORT)
+        return [left_hand, head, right_hand]
+
+
+    def make_sound(self, limbs):
+        """ translate limb positions to osc signals """
+        [left_hand, head, right_hand] = limbs
+        if left_hand:
+            left = 100 - int(left_hand[1][1] / self.smallheight * 100)
+            osc.sendMsg("/left", [left], "127.0.0.1", OSC_PORT)
+        if right_hand:
+            right = 100 - int(right_hand[1][1] / self.smallheight * 100)
+            osc.sendMsg("/right", [right], "127.0.0.1", OSC_PORT)
         
 
     def combine_images(self, images):
@@ -286,26 +315,26 @@ class GetHands:
         """ let histogram build up for a while to get it stable """
         counter = 10
         while counter > 0:
-            self.orig = cv.QueryFrame(self.capture)
-            #cv.PyrDown( self.orig, self.small, 7 )
+            self.orig = self.source.grab_frame()
             cv.Resize(self.orig, self.small)
             cv.CvtColor(self.small, self.bw, cv.CV_BGR2GRAY)
             face = self.find_face(self.bw)
             if face:
-                self.update_histogram(face)
+                sub_face = self.face_region(face, FACE_BORDER)
+                self.update_histogram(sub_face)
+                self.draw_face(self.visualize, face, sub_face)
                 counter -= 1
-            cv.ShowImage('Skin Detection', self.orig )
-            cv.WaitKey(40)
+            cv.ShowImage('Skin Detection', self.small )
+            cv.WaitKey(1000/FPS)
 
 
     def main_loop(self):
         presentation = []
-        self.orig = cv.QueryFrame(self.capture)
-        #cv.PyrDown( self.orig, self.small, 7 ) # CV_GAUSSIAN_5x5 = 7
+        self.orig = self.source.grab_frame()
         cv.Resize(self.orig, self.small)
         cv.CvtColor(self.small, self.bw, cv.CV_BGR2GRAY)
         cv.CvtColor(self.small, self.hsv, cv.CV_BGR2HSV)
-        cv.Split(self.hsv, self.hue, self.sat, self.val, None)
+        cv.Split(self.hsv, self.hue, self.sat, None, None)
         cv.Copy(self.small, self.visualize)
         presentation.append(self.visualize)
         presentation.append(self.hue)
@@ -314,7 +343,9 @@ class GetHands:
         face = self.find_face(self.small)
 
         if face:
-            self.update_histogram(face)
+            sub_face = self.face_region(face, FACE_BORDER)
+            self.update_histogram(sub_face)
+            self.draw_face(self.visualize, face, sub_face)
 
         bp = self.backproject()
 
@@ -326,11 +357,14 @@ class GetHands:
 
         morphed = self.morphology(th)
 
-        cv.Zero(self.result)
+        #cv.Zero(self.result)
+        cv.Copy(self.small, self.result)
+        cv.ConvertScale(self.result, self.result, 0.2)
         cv.Copy(self.small, self.result, morphed)
         contours = self.find_contours(morphed)
         self.draw_contours(self.result, contours)
         limbs = self.find_limbs(contours)
+        limbs = self.sort_limbs(limbs)
         self.draw_limbs(self.result, limbs)
         presentation.append(self.result)
         
@@ -352,7 +386,7 @@ class GetHands:
         while True:
             t = time.time()
             self.main_loop()
-            wait = max(FPS, FPS-int((time.time()-t)*1000))
+            wait = max(1000/FPS, (1000/FPS)-int((time.time()-t)*1000))
             cv.WaitKey(wait)
 
 

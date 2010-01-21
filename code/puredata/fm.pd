@@ -1,4 +1,4 @@
-#N canvas 624 274 717 590 10;
+#N canvas 450 127 717 590 10;
 #X obj 244 450 *~;
 #X obj 268 422 line~;
 #X msg 267 364 0.1 100;
@@ -17,6 +17,7 @@
 #X obj 312 148 print noting;
 #X obj 105 240 + 440;
 #X obj 105 208 * 30;
+#X obj 189 216 / 2;
 #X connect 0 0 10 1;
 #X connect 0 0 10 0;
 #X connect 1 0 0 1;
@@ -30,7 +31,8 @@
 #X connect 12 0 14 0;
 #X connect 12 0 17 0;
 #X connect 12 1 13 0;
-#X connect 12 1 8 0;
+#X connect 12 1 18 0;
 #X connect 12 2 15 0;
 #X connect 16 0 7 0;
 #X connect 17 0 16 0;
+#X connect 18 0 8 0;
