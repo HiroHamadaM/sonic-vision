@@ -8,9 +8,9 @@ requires opencv 2.0 + new python api
 """
 
 # CHANGE ME
-CAMERAID=1 # -1 for auto, -2 for video
-#HAARCASCADE="/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
-HAARCASCADE="/usr/local/share/opencv/haarcascades/haarcascade_frontalface_default.xml" # where to find haar cascade file for face detection
+CAMERAID=-1 # -1 for auto, -2 for video
+HAARCASCADE="/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
+#HAARCASCADE="/usr/local/share/opencv/haarcascades/haarcascade_frontalface_default.xml" # where to find haar cascade file for face detection
 MOVIE="/home/gijs/Work/uva/afstuderen/data/movie/heiligenacht.mp4" # what movie to read
 STORE=False # write output video?
 OUTPUT="/home/gijs/testje.mp4" # where to write output video
@@ -71,7 +71,7 @@ class Source:
                 cv.CV_CAP_PROP_FOURCC, cv.CV_CAP_PROP_BRIGHTNESS,
                 cv.CV_CAP_PROP_CONTRAST, cv.CV_CAP_PROP_SATURATION,
                 cv.CV_CAP_PROP_HUE]:
-            print cv.GetCaptureProperty(capture, prop)
+            print cv.GetCaptureProperty(self.capture, prop)
 
     def grab_frame(self):
         self.frame = cv.QueryFrame(self.capture)
@@ -87,6 +87,7 @@ class GetHands:
     def __init__(self):
         osc.init()
         self.source = Source(CAMERAID)
+        self.source.print_info()
         self.threshold_value = THRESH
         self.hc = cv.Load(HAARCASCADE)
         self.ms = cv.CreateMemStorage()
@@ -194,7 +195,10 @@ class GetHands:
     def scale(self, image):
         """ scale backprojection to max of 255 """
         minVal,maxVal,minLoc,maxLoc = cv.MinMaxLoc(image)
-        scaler = 255/maxVal
+        if maxVal > 0:
+            scaler = 255/maxVal
+        else:
+            scaler = 1
         cv.ConvertScale(image, self.scaled, scale=scaler, shift=0.0) 
         return self.scaled
 
@@ -218,14 +222,19 @@ class GetHands:
 
 
     def find_contours(self, image):
+        # hack to fix segmentation faultin cvseq when no contours are found
+        if cv.CountNonZero( image ) < 100:
+            return None
+
         return cv.FindContours(image, self.ms, mode=cv.CV_RETR_EXTERNAL,
             method=cv.CV_CHAIN_APPROX_SIMPLE, offset=(0, 0))
 
 
     def draw_contours(self, image, contours):
-        cv.DrawContours(img=self.result, contour=contours,
-            external_color=(50, 200, 50), hole_color=(50, 200, 50), max_level=1,
-            thickness=1, line_type=1, offset=(0, 0))
+        if contours:
+            cv.DrawContours(img=self.result, contour=contours,
+                external_color=(50, 200, 50), hole_color=(50, 200, 50), max_level=1,
+                thickness=1, line_type=1, offset=(0, 0))
 
 
     def find_limbs(self, contours):
@@ -311,24 +320,7 @@ class GetHands:
         return self.combined
 
 
-    def init_loop(self):
-        """ let histogram build up for a while to get it stable """
-        counter = 10
-        while counter > 0:
-            self.orig = self.source.grab_frame()
-            cv.Resize(self.orig, self.small)
-            cv.CvtColor(self.small, self.bw, cv.CV_BGR2GRAY)
-            face = self.find_face(self.bw)
-            if face:
-                sub_face = self.face_region(face, FACE_BORDER)
-                self.update_histogram(sub_face)
-                self.draw_face(self.visualize, face, sub_face)
-                counter -= 1
-            cv.ShowImage('Skin Detection', self.small )
-            cv.WaitKey(1000/FPS)
-
-
-    def main_loop(self):
+    def pipline(self):
         presentation = []
         self.orig = self.source.grab_frame()
         cv.Resize(self.orig, self.small)
@@ -357,14 +349,19 @@ class GetHands:
 
         morphed = self.morphology(th)
 
-        #cv.Zero(self.result)
+        # make dark copy of original
         cv.Copy(self.small, self.result)
         cv.ConvertScale(self.result, self.result, 0.2)
+
         cv.Copy(self.small, self.result, morphed)
+
         contours = self.find_contours(morphed)
+
         self.draw_contours(self.result, contours)
+
         limbs = self.find_limbs(contours)
         limbs = self.sort_limbs(limbs)
+
         self.draw_limbs(self.result, limbs)
         presentation.append(self.result)
         
@@ -382,11 +379,11 @@ class GetHands:
 
 
     def run(self):
-        self.init_loop()
         while True:
             t = time.time()
-            self.main_loop()
-            wait = max(1000/FPS, (1000/FPS)-int((time.time()-t)*1000))
+            self.pipline()
+            print int((time.time()-t)*1000)
+            wait = max(40, (1000/FPS)-int((time.time()-t)*1000))
             cv.WaitKey(wait)
 
 
