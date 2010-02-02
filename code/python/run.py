@@ -87,7 +87,7 @@ class GetHands:
     def __init__(self):
         osc.init()
         self.source = Source(CAMERAID)
-        self.source.print_info()
+        #self.source.print_info()
         self.threshold_value = THRESH
         self.hc = cv.Load(HAARCASCADE)
         self.ms = cv.CreateMemStorage()
@@ -242,9 +242,8 @@ class GetHands:
         blobs = []
         while contours:
             (i, center, radius) = cv.MinEnclosingCircle(contours)
-            blobs.append((radius, center))
+            blobs.append((int(round(radius)), tuple([int(round(c)) for c in center])))
             contours = contours.h_next()
-
         blobs.sort()
         blobs.reverse()
         return blobs[:3]
@@ -382,8 +381,7 @@ class GetHands:
         while True:
             t = time.time()
             self.pipline()
-            print int((time.time()-t)*1000)
-            wait = max(40, (1000/FPS)-int((time.time()-t)*1000))
+            wait = max(2, (1000/FPS)-int((time.time()-t)*1000))
             cv.WaitKey(wait)
 
 
