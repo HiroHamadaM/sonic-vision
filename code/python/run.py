@@ -4,7 +4,7 @@ Gijs Molenaar
 gijs@pythonic.nl
 http://gijs.pythonic.nl
 
-requires opencv 2.0 + new python api
+requires opencv svn + new python api
 """
 
 # CHANGE ME
@@ -222,10 +222,6 @@ class GetHands:
 
 
     def find_contours(self, image):
-        # hack to fix segmentation faultin cvseq when no contours are found
-        if cv.CountNonZero( image ) < 100:
-            return None
-
         return cv.FindContours(image, self.ms, mode=cv.CV_RETR_EXTERNAL,
             method=cv.CV_CHAIN_APPROX_SIMPLE, offset=(0, 0))
 
