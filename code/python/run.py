@@ -8,9 +8,9 @@ requires opencv 2.0 + new python api
 """
 
 # CHANGE ME
-CAMERAID=-1 # -1 for auto, -2 for video
-HAARCASCADE="/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
-#HAARCASCADE="/usr/local/share/opencv/haarcascades/haarcascade_frontalface_default.xml" # where to find haar cascade file for face detection
+CAMERAID=1 # -1 for auto, -2 for video
+#HAARCASCADE="/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
+HAARCASCADE="/usr/local/share/opencv/haarcascades/haarcascade_frontalface_default.xml" # where to find haar cascade file for face detection
 MOVIE="/home/gijs/Work/uva/afstuderen/data/movie/heiligenacht.mp4" # what movie to read
 STORE=False # write output video?
 OUTPUT="/home/gijs/testje.mp4" # where to write output video
@@ -22,7 +22,7 @@ FPS = 25 # target FPS
 HUEBINS = 30 # how many bins for hue histogram
 SATBINS = 32 # how many bins for saturation histogram
 XWINDOWS = 3 # how many windows on x axe
-WORKING_HEIGHT = 200 # size of image to work with, 300 is okay
+WORKING_HEIGHT = 300 # size of image to work with, 300 is okay
 FACE_BORDER = 0.2 # border of face to cut of. 0.2 is 60% of face remaining
 
 
@@ -172,7 +172,7 @@ class GetHands:
 
     def draw_face(self, image, face, sub_face):
         (x, y, w, h) = face
-        cv.Rectangle(image, (x, y), (x+w, y+h), (255, 0, 0))
+        #cv.Rectangle(image, (x, y), (x+w, y+h), (255, 0, 0))
         (x, y, w, h) = sub_face
         cv.Rectangle(image, (x, y), (x+w, y+h), (128, 150, 0))
  
@@ -254,19 +254,21 @@ class GetHands:
         """ draw limb positions with circles into a image """        
         [left_hand, head, right_hand] = limbs
 
-        font = cv.InitFont(cv.CV_FONT_HERSHEY_SIMPLEX, 1, 1) 
+        font = cv.InitFont(cv.CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5) 
 
+        c = (255, 255, 255)
         if left_hand:
-            cv.PutText(image, 'L', left_hand[1], font, (255, 255, 255))
+            cv.PutText(image, 'L', left_hand[1], font, c)
 
         if head:
-            cv.PutText(image, 'H', head[1], font, (255, 255, 255))
+            cv.PutText(image, 'H', head[1], font, c)
 
         if right_hand:
-            cv.PutText(image, 'R', right_hand[1], font, (255, 255, 255))
+            cv.PutText(image, 'R', right_hand[1], font, c)
 
         for (r, c) in [x for x in limbs if x]:
-            cv.Circle(self.result, c, r, (0, 0, 255))
+            #cv.Circle(self.result, c, r, (0, 0, 255))
+            pass
 
 
     def sort_limbs(self, limbs):
@@ -329,8 +331,8 @@ class GetHands:
         cv.Split(self.hsv, self.hue, self.sat, None, None)
         cv.Copy(self.small, self.visualize)
         presentation.append(self.visualize)
-        presentation.append(self.hue)
-        presentation.append(self.sat)
+        #presentation.append(self.hue)
+        #presentation.append(self.sat)
 
         face = self.find_face(self.small)
 
@@ -345,7 +347,7 @@ class GetHands:
         presentation.append(scaled)
 
         th = self.threshold(scaled)
-        presentation.append(th)
+        #presentation.append(th)
 
         morphed = self.morphology(th)
 
@@ -369,6 +371,10 @@ class GetHands:
         
         # combine and show the results
         combined = self.combine_images(presentation)
+        if face:
+            sub_face = self.face_region(face, FACE_BORDER)
+            self.draw_face(self.result, face, sub_face)
+
         cv.ShowImage('Skin Detection', combined )
 
         if STORE:

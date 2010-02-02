@@ -17,7 +17,7 @@
 #X obj 312 148 print noting;
 #X obj 105 240 + 440;
 #X obj 105 208 * 30;
-#X obj 189 216 / 2;
+#X obj 189 216 / 20;
 #X connect 0 0 10 1;
 #X connect 0 0 10 0;
 #X connect 1 0 0 1;
