@@ -34,7 +34,7 @@ int main(int, char**) {
     CascadeClassifier haarzoeker;
     Mat skin = imread(SKIN, 1);
     Mat head = imread(HEAD, 1);
-    Mat handa = imread(HANDA, 1);
+    Mat handa = imread(HANDC, 1);
     Mat hsv_skin, hsv_head, result, bw_head, hsv_handa, bp;
     cvtColor(skin, hsv_skin, CV_BGR2HSV);
     cvtColor(head, hsv_head, CV_BGR2HSV);
@@ -68,17 +68,24 @@ int main(int, char**) {
     int channels[] = {0, 1};
     calcHist( &sub_face,  1, channels, Mat(), hist, 2,  histSize, ranges );
 
-    
-    GaussianBlur( bp, result, Size(51, 51), 0, 0, BORDER_DEFAULT );
-
     calcBackProject( &hsv_handa, 1, channels, hist, bp, ranges );
-
+    GaussianBlur( bp, bp, Size(51, 51), 0);
     threshold(bp, result, 80, 255, CV_THRESH_BINARY);
+
+
+    //findContours( vp, vector<vector<Point> >& contours, int mode, int method, Point offset=Point());
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+    findContours( result, contours, hierarchy, RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE );
+    cout << contours.size() << endl;
+
+    //drawContours( handa, contours, 0, CV_RGB(0, 0, 255), CV_FILLED, 8, hierarchy);
+
 
     HOGDescriptor h = HOGDescriptor();
 
     imshow( "sub_face", handa);
-    imshow( "head", head);
+    //imshow( "head", head);
     imshow( "backproject", result );
 
 
