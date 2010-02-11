@@ -8,10 +8,11 @@ requires opencv svn + new python api
 """
 
 # CHANGE ME
-CAMERAID=1 # -1 for auto, -2 for video
+CAMERAID=-2 # -1 for auto, -2 for video
 #HAARCASCADE="/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
 HAARCASCADE="/usr/local/share/opencv/haarcascades/haarcascade_frontalface_default.xml" # where to find haar cascade file for face detection
-MOVIE="/home/gijs/Work/uva/afstuderen/data/movie/heiligenacht.mp4" # what movie to read
+MOVIE="/home/gijs/Work/sonic-vision/data/heiligenacht.mp4" # what movie to read
+#MOVIE="/home/gijs/Work/sonic-vision/data/wayne_cotter.mp4"
 STORE=False # write output video?
 OUTPUT="/home/gijs/testje.mp4" # where to write output video
 OSC_PORT = 6666 # where to send the osc data
@@ -109,7 +110,6 @@ class GetHands:
         self.hue = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
         self.sat = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
         self.bp = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
-        self.scaled = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
         self.th = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
         self.morphed = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
         self.temp = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
@@ -130,9 +130,14 @@ class GetHands:
             rows=MORPH_SIZE, anchor_x=center, anchor_y=center,
             shape=cv.CV_SHAPE_ELLIPSE)
 
-        # alloc mem for histogram
-        self.hist = cv.CreateHist([HUEBINS, SATBINS], cv.CV_HIST_ARRAY,
+        # alloc mem for face histogram
+        self.face_hist = cv.CreateHist([HUEBINS, SATBINS], cv.CV_HIST_ARRAY,
             [[0, 180], [0, 255]], 1)
+
+        # alloc mem for background histogram
+        self.bg_hist = cv.CreateHist([HUEBINS, SATBINS], cv.CV_HIST_ARRAY,
+            [[0, 180], [0, 255]], 1)
+
 
         # video writer
         if STORE:
@@ -163,10 +168,10 @@ class GetHands:
 
     def face_region(self, face, border):
         (x, y, w, h) = face
-        x2 = int(x+w*border)
-        y2 = int(y+h*border)
-        w2 = int(w-w*border*2)
-        h2 = int(h-h*border*2)
+        x2 = int(x+w*0.2)
+        y2 = int(y+h*0.15) # added to make rectange
+        w2 = int(w-w*0.2*2)
+        h2 = int(h-h*0.15*2)
         return (x2, y2, w2, h2)
 
 
@@ -180,27 +185,25 @@ class GetHands:
     def update_histogram(self, region):
         cv.SetImageROI(self.hue, region)
         cv.SetImageROI(self.sat, region)
-        cv.CalcArrHist([self.hue, self.sat], self.hist, 1)
-        cv.NormalizeHist(self.hist, 255)
+        cv.CalcArrHist([self.hue, self.sat], self.face_hist, 1)
+        #cv.NormalizeHist(self.face_hist, 255)
         cv.ResetImageROI(self.hue)
         cv.ResetImageROI(self.sat)
 
 
     def backproject(self):
         """ do a backprojection of face histogram on full image """
-        cv.CalcArrBackProject([self.hue, self.sat], self.bp, self.hist)
+        cv.CalcArrBackProject([self.hue, self.sat], self.bp, self.face_hist)
         return self.bp
 
 
-    def scale(self, image):
-        """ scale backprojection to max of 255 """
+    def normalize(self, image):
+        """ scale image to max of 255 """
         minVal,maxVal,minLoc,maxLoc = cv.MinMaxLoc(image)
         if maxVal > 0:
             scaler = 255/maxVal
-        else:
-            scaler = 1
-        cv.ConvertScale(image, self.scaled, scale=scaler, shift=0.0) 
-        return self.scaled
+            cv.ConvertScale(image, image, scale=scaler, shift=0.0) 
+        return image
 
 
     def threshold(self, image):
@@ -303,7 +306,9 @@ class GetHands:
         comb_height = self.smallheight * int(math.ceil(len(images) / float(XWINDOWS)))
         self.combined = cv.CreateImage((comb_width, comb_height), cv.IPL_DEPTH_8U, 3)
 
-        for i,image in enumerate(images):
+        font = cv.InitFont(cv.CV_FONT_HERSHEY_SIMPLEX, 0.3, 0.3)
+
+        for i,(image, name) in enumerate(images):
             if image.nChannels == 1:
                 cv.Merge(image, image, image, None, self.temp3)
             else:
@@ -313,55 +318,67 @@ class GetHands:
             cv.SetImageROI(self.combined, (xoffset, yoffset, self.smallsize[0],
                 self.smallsize[1]))
             cv.Copy(self.temp3, self.combined)
+            cv.PutText(self.combined, name, (5, 10), font, (30, 200, 200))
             cv.ResetImageROI(self.combined)
         return self.combined
 
 
-    def pipline(self):
+    def pipeline(self):
         presentation = []
         self.orig = self.source.grab_frame()
         cv.Resize(self.orig, self.small)
-        cv.CvtColor(self.small, self.bw, cv.CV_BGR2GRAY)
         cv.CvtColor(self.small, self.hsv, cv.CV_BGR2HSV)
-        cv.Split(self.hsv, self.hue, self.sat, None, None)
+        cv.Split(self.hsv, self.hue, self.sat, self.bw, None)
         cv.Copy(self.small, self.visualize)
-        presentation.append(self.visualize)
-        #presentation.append(self.hue)
-        #presentation.append(self.sat)
-
+        presentation.append((self.visualize, 'input'))
         face = self.find_face(self.small)
-
         if face:
             sub_face = self.face_region(face, FACE_BORDER)
             self.update_histogram(sub_face)
             self.draw_face(self.visualize, face, sub_face)
 
+            hue_bg = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
+            sat_bg = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
+            (x, y, w, h) = face
+            cv.Copy(self.hue, hue_bg) 
+            cv.Copy(self.sat, sat_bg) 
+            cv.Rectangle(hue_bg, (x, y), (x+w, y+h), 0, cv.CV_FILLED)
+            cv.Rectangle(sat_bg, (x, y), (x+w, y+h), 0, cv.CV_FILLED)
+            cv.CalcArrHist([self.hue, self.sat], self.bg_hist, 1)
+            cv.NormalizeHist(self.bg_hist, 255)
+
+        bp_bg = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
+        cv.CalcArrBackProject([self.hue, self.sat], bp_bg, self.bg_hist)
+        self.normalize(bp_bg)
+        presentation.append((bp_bg, 'background bp'))
+
         bp = self.backproject()
+        presentation.append((bp, 'forground bp'))
+        self.normalize(bp)
 
-        scaled = self.scale(bp)
-        presentation.append(scaled)
+        compare = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
+        compare_th = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
+        #cv.Cmp(bp, bp_bg, compare, cv.CV_CMP_GT)
+        cv.AddS(bp_bg, 1, bp_bg) 
+        cv.Div(bp, bp_bg, compare)
+        self.normalize(compare)
+        cv.Threshold(compare, compare_th, self.threshold_value, 255, cv.CV_THRESH_BINARY)
+        presentation.append((compare_th, 'compare'))
 
-        th = self.threshold(scaled)
-        #presentation.append(th)
-
+        th = self.threshold(bp)
+        presentation.append((th, 'normal th'))
         morphed = self.morphology(th)
 
         # make dark copy of original
         cv.Copy(self.small, self.result)
         cv.ConvertScale(self.result, self.result, 0.2)
-
         cv.Copy(self.small, self.result, morphed)
-
         contours = self.find_contours(morphed)
-
         self.draw_contours(self.result, contours)
-
         limbs = self.find_limbs(contours)
         limbs = self.sort_limbs(limbs)
-
         self.draw_limbs(self.result, limbs)
-        presentation.append(self.result)
-        
+        presentation.append((self.result, 'result'))
         self.make_sound(limbs)
         
         # combine and show the results
@@ -375,14 +392,20 @@ class GetHands:
         if STORE:
             cv.WriteFrame(self.writer, self.combined)
 
-        #hist_img = hue_histogram_as_image(self.hist)
-        #cv.ShowImage( "histogram", self.hist_image )
+        #hist_img = hue_histogram_as_image(self.face_hist)
+        #mat = self.face_hist.bins
+        #x = cv.GetMat(mat, 0, 1)
+        #print type(x)
+        #print dir(x)
+        #print x.width
+        #print x[0][0]
+        #cv.ShowImage( "histogram", x )
 
 
     def run(self):
         while True:
             t = time.time()
-            self.pipline()
+            self.pipeline()
             wait = max(2, (1000/FPS)-int((time.time()-t)*1000))
             cv.WaitKey(wait)
 

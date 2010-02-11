@@ -1,0 +1,15 @@
+code/cpp/finder/.dep.inc
+code/cpp/finder/CMakeCache.txt
+code/cpp/finder/CMakeFiles/*
+code/cpp/finder/CMakeFiles/progress.marks
+code/cpp/finder/HogFinder/CMakeFiles/*
+code/cpp/finder/HogFinder/cmake_install.cmake
+code/cpp/finder/HogFinder/libHogFinder.a
+code/cpp/finder/Makefile-finder.mk
+code/cpp/finder/cmake_install.cmake
+code/cpp/finder/finder
+syntax: glob
+*.py.swp
+*pyc
+*.py~
+data/movies/*

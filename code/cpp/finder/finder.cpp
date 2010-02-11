@@ -3,31 +3,45 @@
 #define SKIN "/home/gijs/Work/sonic-vision/data/hand/skin.png"
 #define HEAD "/home/gijs/Work/sonic-vision/data/hand/head.png"
 #define FACEHAAR "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt.xml"
+#define HANDA "../../../data/hand/a.png"
+#define HANDB "../../../data/hand/b.png"
+#define HANDC "../../../data/hand/c.png"
+#define HANDD "../../../data/hand/d.png"
 
 #include "cv.h"
 #include "highgui.h"
 #include "cvaux.h"
-//#include "cv.hpp"
-//#include "cvaux.hpp"
+
 #include <iostream>
 
 using namespace cv;
 using namespace std;
 
-int main(int, char**)
-{
+Rect face_region(Rect face) {
+    Rect r;
+    r.x = face.x + face.width * 0.2;
+    r.y = face.y + face.height * 0.15;
+    r.width = face.width * 0.6;
+    r.height = face.height * 0.7;
+    return r;
+}
 
-    setNumThreads(0);
+
+int main(int, char**) {
+
+    setNumThreads(5);
 
     CascadeClassifier haarzoeker;
     Mat skin = imread(SKIN, 1);
     Mat head = imread(HEAD, 1);
-    Mat hsv_skin, hsv_head, result, bw_head;
+    Mat handa = imread(HANDA, 1);
+    Mat hsv_skin, hsv_head, result, bw_head, hsv_handa, bp;
     cvtColor(skin, hsv_skin, CV_BGR2HSV);
     cvtColor(head, hsv_head, CV_BGR2HSV);
+    cvtColor(handa, hsv_handa, CV_BGR2HSV);
     cvtColor(head, bw_head, CV_BGR2GRAY);
 
-    vector<Rect> faces;
+    
     if ( !haarzoeker.load(FACEHAAR) ) {
         cerr << "haar werkt niet" << endl;
     };
@@ -38,24 +52,34 @@ int main(int, char**)
         //return -1;
     //}
 
-    HOGDescriptor h = HOGDescriptor();
-
+    vector<Rect> faces;
     haarzoeker.detectMultiScale(bw_head, faces, 1.1, 2, CV_HAAR_SCALE_IMAGE, Size(30, 30) );
+    Rect face = faces[0];
+    Rect region = face_region(face);
+    Mat sub_face = hsv_head(region);
+    rectangle(head, region, CV_RGB(0,0,255), 1, 1);
+    MatND hist;
 
     int hbins = 30, sbins = 32;
     int histSize[] = {hbins, sbins};
     const float hranges[] = { 0, 180 };
     const float sranges[] = { 0, 256 };
     const float* ranges[] = { hranges, sranges };
-    MatND hist;
     int channels[] = {0, 1};
+    calcHist( &sub_face,  1, channels, Mat(), hist, 2,  histSize, ranges );
 
-    calcHist( &hsv_skin,  1, channels, Mat(), hist, 2,  histSize, ranges );
-    calcBackProject( &hsv_head, 1, channels, hist, result, ranges );
+    
+    GaussianBlur( bp, result, Size(51, 51), 0, 0, BORDER_DEFAULT );
 
+    calcBackProject( &hsv_handa, 1, channels, hist, bp, ranges );
 
-    namedWindow( "Source", 1 );
-    imshow( "Source", result );
+    threshold(bp, result, 80, 255, CV_THRESH_BINARY);
+
+    HOGDescriptor h = HOGDescriptor();
+
+    imshow( "sub_face", handa);
+    imshow( "head", head);
+    imshow( "backproject", result );
 
 
     waitKey();
