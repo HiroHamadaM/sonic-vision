@@ -8,7 +8,7 @@ requires opencv svn + new python api
 """
 
 # CHANGE ME
-CAMERAID=-2 # -1 for auto, -2 for video
+CAMERAID=1 # -1 for auto, -2 for video
 #HAARCASCADE="/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml"
 HAARCASCADE="/usr/local/share/opencv/haarcascades/haarcascade_frontalface_default.xml" # where to find haar cascade file for face detection
 MOVIE="/home/gijs/Work/sonic-vision/data/heiligenacht.mp4" # what movie to read
@@ -23,7 +23,7 @@ FPS = 25 # target FPS
 HUEBINS = 30 # how many bins for hue histogram
 SATBINS = 32 # how many bins for saturation histogram
 XWINDOWS = 3 # how many windows on x axe
-WORKING_HEIGHT = 300 # size of image to work with, 300 is okay
+WORKING_HEIGHT = 200 # size of image to work with, 300 is okay
 FACE_BORDER = 0.2 # border of face to cut of. 0.2 is 60% of face remaining
 
 
@@ -318,7 +318,7 @@ class GetHands:
             cv.SetImageROI(self.combined, (xoffset, yoffset, self.smallsize[0],
                 self.smallsize[1]))
             cv.Copy(self.temp3, self.combined)
-            cv.PutText(self.combined, name, (5, 10), font, (30, 200, 200))
+            cv.PutText(self.combined, name, (5, 10), font, (0, 0, 200))
             cv.ResetImageROI(self.combined)
         return self.combined
 
@@ -358,9 +358,9 @@ class GetHands:
 
         compare = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
         compare_th = cv.CreateImage(self.smallsize, cv.IPL_DEPTH_8U, 1)
-        #cv.Cmp(bp, bp_bg, compare, cv.CV_CMP_GT)
-        cv.AddS(bp_bg, 1, bp_bg) 
-        cv.Div(bp, bp_bg, compare)
+        cv.Cmp(bp, bp_bg, compare, cv.CV_CMP_GT)
+        #cv.AddS(bp_bg, 1, bp_bg) 
+        #cv.Div(bp, bp_bg, compare)
         self.normalize(compare)
         cv.Threshold(compare, compare_th, self.threshold_value, 255, cv.CV_THRESH_BINARY)
         presentation.append((compare_th, 'compare'))
