@@ -1,12 +1,13 @@
 #define CV_NO_BACKWARD_COMPATIBILITY
 
-#define SKIN "/home/gijs/Work/sonic-vision/data/hand/skin.png"
-#define HEAD "/home/gijs/Work/sonic-vision/data/hand/head.png"
+//#define SKIN "../../../data/hand/skin.png"
+#define SKIN "/Users/gijs/Work/sonic-vision/data/hand/skin.png"
+#define HEAD "/Users/gijs/Work/sonic-vision/data/hand/head.png"
 #define FACEHAAR "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt.xml"
-#define HANDA "../../../data/hand/a.png"
-#define HANDB "../../../data/hand/b.png"
-#define HANDC "../../../data/hand/c.png"
-#define HANDD "../../../data/hand/d.png"
+#define HANDA "/Users/gijs/Work/sonic-vision/data/hand/a.png"
+#define HANDB "/Users/gijs/Work/sonic-vision/data/hand/b.png"
+#define HANDC "/Users/gijs/Work/sonic-vision/data/hand/c.png"
+#define HANDD "/Users/gijs/Work/sonic-vision/data/hand/d.png"
 
 #include "cv.h"
 #include "highgui.h"
@@ -14,7 +15,7 @@
 
 #include <iostream>
 
-//bla bla
+
 using namespace cv;
 using namespace std;
 
@@ -33,19 +34,32 @@ int main(int, char**) {
     setNumThreads(5);
 
     CascadeClassifier haarzoeker;
+	Mat hsv_skin, hsv_head, result, bw_head, hsv_handa, bp;
     Mat skin = imread(SKIN, 1);
+	if (!skin.data) {
+	 cerr << "can't load skin" << endl;
+		return -1;
+	}
     Mat head = imread(HEAD, 1);
-    Mat handa = imread(HANDC, 1);
-    Mat hsv_skin, hsv_head, result, bw_head, hsv_handa, bp;
+	if (!head.data) {
+		cerr << "can't load head" << endl;
+		return -1;
+	}
+	Mat handa = imread(HANDA, 1);
+	if (!handa.data) {
+		cerr << "can't load handa" << endl;
+		return -1;
+	}
+
+    if ( !haarzoeker.load(FACEHAAR) ) {
+        cerr << "haar werkt niet" << endl;
+    };
+	
+	
     cvtColor(skin, hsv_skin, CV_BGR2HSV);
     cvtColor(head, hsv_head, CV_BGR2HSV);
     cvtColor(handa, hsv_handa, CV_BGR2HSV);
     cvtColor(head, bw_head, CV_BGR2GRAY);
-
-    
-    if ( !haarzoeker.load(FACEHAAR) ) {
-        cerr << "haar werkt niet" << endl;
-    };
 
     //VideoCapture cap(0);
     //if(!cap.isOpened()) {
@@ -71,23 +85,29 @@ int main(int, char**) {
 
     calcBackProject( &hsv_handa, 1, channels, hist, bp, ranges );
     GaussianBlur( bp, bp, Size(51, 51), 0);
-    threshold(bp, result, 80, 255, CV_THRESH_BINARY);
+    threshold(bp, bp, 80, 255, CV_THRESH_BINARY);
 
 
-    //findContours( vp, vector<vector<Point> >& contours, int mode, int method, Point offset=Point());
-    vector<vector<Point> > contours;
+	vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
-    findContours( result, contours, hierarchy, RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE );
-    cout << contours.size() << endl;
+	
+    //findContours( bp, contours, hierarchy,
+	//			 CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE );
+	
+	/* // iterate through all the top-level contours,
+	// draw each connected component with its own random color
+	int idx = 0;
+	for( ; idx >= 0; idx = hierarchy[idx][0] )
+	{
+		Scalar color( rand()&255, rand()&255, rand()&255 );
+		drawContours( handa, contours, idx, color, CV_FILLED, 8, hierarchy );
+	} */
 
-    //drawContours( handa, contours, 0, CV_RGB(0, 0, 255), CV_FILLED, 8, hierarchy);
-
-
-    HOGDescriptor h = HOGDescriptor();
+    //HOGDescriptor h = HOGDescriptor();
 
     imshow( "sub_face", handa);
     //imshow( "head", head);
-    imshow( "backproject", result );
+    imshow( "backproject", bp );
 
 
     waitKey();
@@ -105,5 +125,6 @@ int main(int, char**) {
         if(waitKey(30) >= 0) break;
     }
     return 0; */
+
 }
 
