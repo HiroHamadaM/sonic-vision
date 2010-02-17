@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configurationDescriptor version="62">
-  <projectmakefile>Makefile-finder.mk</projectmakefile>
+  <projectmakefile>finder-Makefile.mk</projectmakefile>
   <defaultConf>0</defaultConf>
   <confs>
     <conf name="Default" type="0">
@@ -15,7 +15,7 @@
         <args></args>
         <rundir></rundir>
         <buildfirst>true</buildfirst>
-        <console-type>2</console-type>
+        <console-type>0</console-type>
         <terminal-type>0</terminal-type>
         <remove-instrumentation>0</remove-instrumentation>
         <environment>
