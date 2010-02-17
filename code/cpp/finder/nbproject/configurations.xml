@@ -33,14 +33,15 @@
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
                    projectFiles="false">
+      <itemPath>/home/gijs/Work/sonic-vision/code/cpp/finder/CMakeLists.txt</itemPath>
       <itemPath>/home/gijs/Work/sonic-vision/code/cpp/finder/Makefile</itemPath>
-      <itemPath>Makefile-finder.mk</itemPath>
+      <itemPath>finder-Makefile.mk</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
     <Elem>/home/gijs/Work/sonic-vision/code/cpp/finder</Elem>
   </sourceRootList>
-  <projectmakefile>Makefile-finder.mk</projectmakefile>
+  <projectmakefile>finder-Makefile.mk</projectmakefile>
   <confs>
     <conf name="Default" type="0">
       <toolsSet>
@@ -51,18 +52,23 @@
       <makefileType>
         <makeTool>
           <buildCommandWorkingDir>/home/gijs/Work/sonic-vision/code/cpp/finder</buildCommandWorkingDir>
-          <buildCommand>$(MAKE) -f Makefile</buildCommand>
-          <cleanCommand>$(MAKE) -f Makefile clean</cleanCommand>
+          <buildCommand>${MAKE} -f Makefile</buildCommand>
+          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
           <executablePath>finder</executablePath>
+          <cTool>
+            <incDir>
+              <pElem>/usr/local/include/opencv</pElem>
+              <pElem>.</pElem>
+            </incDir>
+          </cTool>
+          <ccTool>
+            <incDir>
+              <pElem>/usr/local/include/opencv</pElem>
+              <pElem>.</pElem>
+            </incDir>
+          </ccTool>
         </makeTool>
       </makefileType>
-      <folder path="finder">
-        <ccTool>
-          <incDir>
-            <pElem>/usr/local/include/opencv</pElem>
-          </incDir>
-        </ccTool>
-      </folder>
     </conf>
   </confs>
 </configurationDescriptor>
