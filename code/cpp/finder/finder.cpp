@@ -29,6 +29,7 @@ Rect face_region(Rect face) {
 }
 
 
+
     //VideoCapture cap(0);
     //if(!cap.isOpened()) {
         //cout << "couldn't open video\n";
@@ -91,18 +92,28 @@ int main(int, char**) {
 
     vector<vector<Point> > contours;
     findContours( result, contours, RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE );
-    drawContours( handa, contours, -1, Scalar( 0, 0, 255 ));
+    //drawContours( handa, contours, -1, Scalar( 0, 0, 255 ));
 
     Rect box = boundingRect(contours.at(0));
-    Mat inv;
-    inv.ones(handa.size(), 0);
-    inv = inv - handa;
-    rectangle(handa, Point(box.x, box.y), Point(box.x+box.width, box.y+box.height), Scalar(0, 255, 0) );
-    //HOGDescriptor h = HOGDescriptor();
+    //rectangle(handa, Point(box.x, box.y), Point(box.x+box.width, box.y+box.height), Scalar(0, 255, 0) );
+    
+    Mat clean;
+    handa.copyTo(clean, result);
+    Mat sub = clean(box);
 
-    imshow( "sub_face", handa);
+    Mat sized;
+    resize(sub, sized, Size(100, 100));
+
+    HOGDescriptor h = HOGDescriptor();
+
+    vector<float> descriptors;
+    vector<Point> locations;
+    h.compute(sized, descriptors, Size(5, 5), Size(10, 10), locations);
+
+    imshow("clean", sized);
+    //imshow( "sub_face", handa);
     //imshow( "head", head);
-    imshow( "backproject", result );
+    //imshow( "backproject", result );
 
 
     waitKey();
