@@ -1,11 +1,11 @@
 #ifndef INCLUDE_FINDHOG
 #define INCLUDE_FINDHOG
 
+#include "cv.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "cv.h"
 
 IplImage** calculateIntegralHOG(IplImage* in);
 void calculateHOG_rect(CvRect cell, CvMat* hog_cell, IplImage** integrals, int normalization);

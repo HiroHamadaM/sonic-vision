@@ -12,6 +12,7 @@
 #include "cvtypes.h"
 #include "highgui.h"
 #include "cvaux.h"
+#include "hog/hog.h"
 
 #include <iostream>
 
@@ -62,8 +63,8 @@ int main(int, char**) {
     if ( !haarzoeker.load(FACEHAAR) ) {
         cerr << "haar werkt niet" << endl;
     };
-	
-	
+
+
     cvtColor(skin, hsv_skin, CV_BGR2HSV);
     cvtColor(head, hsv_head, CV_BGR2HSV);
     cvtColor(handa, hsv_handa, CV_BGR2HSV);
@@ -96,27 +97,41 @@ int main(int, char**) {
 
     Rect box = boundingRect(contours.at(0));
     //rectangle(handa, Point(box.x, box.y), Point(box.x+box.width, box.y+box.height), Scalar(0, 255, 0) );
-    
+
     Mat clean;
     handa.copyTo(clean, result);
     Mat sub = clean(box);
 
     Mat sized;
-    resize(sub, sized, Size(100, 100));
+    CvSize window = Size(64,128);
+    resize(sub, sized, window);
 
-    HOGDescriptor h = HOGDescriptor();
+    //HOGDescriptor h = HOGDescriptor();
+    //vector<float> descriptors;
+    //vector<Point> locations;
+    //h.compute(sized, descriptors, Size(5, 5), Size(10, 10), locations);
 
-    vector<float> descriptors;
-    vector<Point> locations;
-    h.compute(sized, descriptors, Size(5, 5), Size(10, 10), locations);
+    IplImage** integrals;
+    IplImage img = IplImage(sized);
 
-    imshow("clean", sized);
+    int normalization = 4;
+    CvMat* img_feature_vector;
+    //cvShowImage("henk", &img);
+    //waitKey();
+    integrals = calculateIntegralHOG(&img);
+
+    //img_feature_vector = calculateHOG_window(integrals, cvRect(0, 0, window.width, window.height), normalization);
+
+
+
+
+    //imshow("clean", sized);
     //imshow( "sub_face", handa);
-    //imshow( "head", head);
+    //imshow( "head", head);/home/gijs/Work/sonic-vision/code/cpp/finder/finder
     //imshow( "backproject", result );
 
 
-    waitKey();
+    //waitKey();
 
     /* Mat edges;
     namedWindow("edges",1);
