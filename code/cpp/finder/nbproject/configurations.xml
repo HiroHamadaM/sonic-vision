@@ -16,19 +16,22 @@
           <in>CMakeCXXCompilerId.cpp</in>
         </df>
         <df name="finder.dir">
+          <df name="hog">
+          </df>
         </df>
       </df>
-      <df name="HogFinder">
+      <df name="hog">
         <df name="CMakeFiles">
           <df name="HogFinder.dir">
           </df>
         </df>
-        <in>HogFinder.h</in>
+        <in>hog.h</in>
         <in>part1.cpp</in>
         <in>part2.cpp</in>
         <in>part3.cpp</in>
       </df>
       <in>finder.cpp</in>
+      <in>hog.cpp</in>
     </df>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

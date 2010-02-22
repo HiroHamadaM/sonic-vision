@@ -2,8 +2,11 @@
 #include "cvaux.h"
 #include "highgui.h"
 #include "ml.h"
-#include "HogFinder.h"
+#include "hog.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 char *cvtInt( char *str, int num)
 {
@@ -11,22 +14,17 @@ char *cvtInt( char *str, int num)
 }
 
 
-/*This function takes in a the path and names of
-  64x128 pixel images, the size of the cell to be
-  used for calculation of hog features(which should
-  be 8x8 pixels, some modifications will have to be 
-  done in the code for a different cell size, which
-  could be easily done once the reader understands
-  how the code works), a default block size of 2x2
-  cells has been considered and the window size
-  parameter should be 64x128 pixels (appropriate
-  modifications can be easily done for other say
-  64x80 pixel window size). All the training images
-  are expected to be stored at the same location and
-  the names of all the images are expected to be in
-  sequential order like a1.jpg, a2.jpg, a3.jpg ..
-  and so on or a(1).jpg, a(2).jpg, a(3).jpg ... The
-  explanation of all the parameters below will make
+/*This function takes in a the path and names of 64x128 pixel images, the size
+ * of the cell to be used for calculation of hog features(which should
+ * be 8x8 pixels, some modifications will have to be done in the code for a
+ * different cell size, which could be easily done once the reader understands
+ * how the code works), a default block size of 2x2 cells has been considered
+ * and the window size parameter should be 64x128 pixels (appropriate
+ * modifications can be easily done for other say 64x80 pixel window size). All
+ * the training images are expected to be stored at the same location and the
+ * names of all the images are expected to be in sequential order like a1.jpg,
+ * a2.jpg, a3.jpg .. and so on or a(1).jpg, a(2).jpg, a(3).jpg ... The explanation
+ * of all the parameters below will make
   clear the usage of the function. The synopsis of
   the function is as follows :
 
@@ -132,8 +130,7 @@ CvMat* train_64x128(char *prefix, char *suffix, CvSize cell,
 
         integrals = calculateIntegralHOG(img);
         cvGetRow(training, &row, j);
-        img_feature_vector
-            = calculateHOG_window(integrals, cvRect(0, 0,
+        img_feature_vector = calculateHOG_window(integrals, cvRect(0, 0,
                         window.width, window.height), normalization);
         cvCopy(img_feature_vector, &row);
         j++;
@@ -430,3 +427,6 @@ void trainSVM(CvMat* pos_mat, CvMat* neg_mat, char *savexml,
 
 }
 
+#ifdef __cplusplus
+}
+#endif
