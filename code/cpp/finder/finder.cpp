@@ -13,13 +13,7 @@
 #include "cvtypes.h"
 #include "highgui.h"
 #include "cvaux.h"
-//#include "hog/hog.h"
-//#include "rewrite.h"
-
 #include <iostream>
-#include <vector>
-#include <iterator>
-
 
 using namespace cv;
 using namespace std;
@@ -126,9 +120,10 @@ int main(int, char**) {
     HOGDescriptor h = HOGDescriptor();
     vector<float> descriptors;
     vector<Point> locations;
-	Size winStride = Size();
-	Size padding = Size(10, 10);
+	Size winStride = Size(64, 64);
+	Size padding = Size(0, 0);
     h.compute(sized_bw, descriptors, winStride, padding, locations);
+	cout << descriptors.size() << endl;
 	
 	//cout << "sum: "	<< sum( descriptors );
 
