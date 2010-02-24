@@ -1,10 +1,10 @@
 #include "cv.h"
 #include "hog.h"
-
+/* 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+ */
 
 /* This function takes in a block as a rectangle and calculates the hog features
  * for the block by dividing it into cells of size cell(the supplied parameter),
@@ -96,7 +96,7 @@ CvMat* calculateHOG_window(IplImage** integrals,
  return (window_feature_vector);
 }
 
-
+/* 
 #ifdef __cplusplus
 }
-#endif
+#endif */

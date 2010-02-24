@@ -1,31 +1,22 @@
 #include "cv.h"
 #include "highgui.h"
 
-
-#include <opencv/highgui.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
     
 /*Function to calculate the integral histogram*/
 IplImage** calculateIntegralHOG(IplImage* in)
 {
-    cvShowImage("gijs", &in);
-    cvWaitKey();
-    //cv::waitKey();
 
     /*Convert the input image to grayscale*/
     IplImage* img_gray = cvCreateImage(cvGetSize(in), IPL_DEPTH_8U,1);
     cvCvtColor(in, img_gray, CV_BGR2GRAY);
     cvEqualizeHist(img_gray,img_gray);
-
+	
     /* Calculate the derivates of the grayscale image in the x and y directions
      * using a sobel operator and obtain 2 gradient images for the x and y
      * directions*/
     IplImage *xsobel, *ysobel;
-    cvSobel(img_gray, xsobel, 1, 0, 3);
-    cvSobel(img_gray, ysobel, 0, 1, 3);
+    cvSobel(img_gray, &xsobel, 1, 0, 3);
+    cvSobel(img_gray, &ysobel, 0, 1, 3);
     cvReleaseImage(&img_gray);
 
 
@@ -186,6 +177,8 @@ void calculateHOG_rect(CvRect cell, CvMat* hog_cell,
 
 }
 
+/*
 #ifdef __cplusplus
 }
 #endif
+*/

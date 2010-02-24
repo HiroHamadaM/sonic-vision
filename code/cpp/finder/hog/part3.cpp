@@ -4,10 +4,11 @@
 #include "ml.h"
 #include "hog.h"
 
+/*
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+*/
 char *cvtInt( char *str, int num)
 {
         sprintf( str, "%d", num );
@@ -427,6 +428,8 @@ void trainSVM(CvMat* pos_mat, CvMat* neg_mat, char *savexml,
 
 }
 
+/*
 #ifdef __cplusplus
 }
 #endif
+*/
