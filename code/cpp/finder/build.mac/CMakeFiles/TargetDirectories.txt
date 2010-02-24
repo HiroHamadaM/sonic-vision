@@ -1,0 +1,2 @@
+/Users/gijs/Work/sonic-vision/code/cpp/finder/build.mac/CMakeFiles/ALL_BUILD.dir
+/Users/gijs/Work/sonic-vision/code/cpp/finder/build.mac/CMakeFiles/finder.dir

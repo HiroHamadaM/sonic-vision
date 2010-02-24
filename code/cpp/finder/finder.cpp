@@ -1,20 +1,24 @@
 //#define CV_NO_BACKWARD_COMPATIBILITY
 
+
 #define SKIN "../../../data/hand/skin.png"
 #define HEAD "../../../data/hand/head.png"
-#define FACEHAAR "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt.xml"
 #define HANDA "../../../data/hand/a.png"
 #define HANDB "../../../data/hand/b.png"
 #define HANDC "../../../data/hand/c.png"
 #define HANDD "../../../data/hand/d.png"
+#define FACEHAAR "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt.xml"
 
 #include "cv.h"
 #include "cvtypes.h"
 #include "highgui.h"
 #include "cvaux.h"
-#include "hog/hog.h"
+//#include "hog/hog.h"
+//#include "rewrite.h"
 
 #include <iostream>
+#include <vector>
+#include <iterator>
 
 
 using namespace cv;
@@ -29,14 +33,23 @@ Rect face_region(Rect face) {
     return r;
 }
 
-
-
     //VideoCapture cap(0);
     //if(!cap.isOpened()) {
         //cout << "couldn't open video\n";
         //return -1;
     //}
 
+
+float sum(const vector<float>& x) {
+    float total = 0.0;  // the sum is accumulated here
+    for (unsigned int i=0; i<x.size(); i++) {
+        total = total + x[i]; 
+		cout << "x: " << x[i] << endl;
+		cout << "xsize: " << x.size() << endl;
+		cout << "i: " << i << endl;
+    }
+    return total;
+}
 
 int main(int, char**) {
 
@@ -93,10 +106,10 @@ int main(int, char**) {
 
     vector<vector<Point> > contours;
     findContours( result, contours, RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE );
-    //drawContours( handa, contours, -1, Scalar( 0, 0, 255 ));
+    drawContours( handa, contours, -1, Scalar( 0, 0, 255 ));
 
     Rect box = boundingRect(contours.at(0));
-    //rectangle(handa, Point(box.x, box.y), Point(box.x+box.width, box.y+box.height), Scalar(0, 255, 0) );
+    rectangle(handa, Point(box.x, box.y), Point(box.x+box.width, box.y+box.height), Scalar(0, 255, 0) );
 
     Mat clean;
     handa.copyTo(clean, result);
@@ -105,33 +118,46 @@ int main(int, char**) {
     Mat sized;
     CvSize window = Size(64,128);
     resize(sub, sized, window);
+	
+	Mat sized_bw;
+	cvtColor(sized, sized_bw, CV_BGR2GRAY);
+	equalizeHist(sized_bw, sized_bw);
+	
+    HOGDescriptor h = HOGDescriptor();
+    vector<float> descriptors;
+    vector<Point> locations;
+	Size winStride = Size();
+	Size padding = Size(10, 10);
+    h.compute(sized_bw, descriptors, winStride, padding, locations);
+	
+	//cout << "sum: "	<< sum( descriptors );
 
-    //HOGDescriptor h = HOGDescriptor();
-    //vector<float> descriptors;
-    //vector<Point> locations;
-    //h.compute(sized, descriptors, Size(5, 5), Size(10, 10), locations);
+	//imshow("clean", sized);
+    //imshow( "sub_face", handa);
+    //imshow( "head", head);
+    //imshow( "backproject", result );
+    imshow( "sized", sized_bw );
 
-    IplImage** integrals;
-    IplImage img = IplImage(sized);
+	waitKey();
+	
+	return 0;
+	//cout << descriptors.
 
-    int normalization = 4;
-    CvMat* img_feature_vector;
-    //cvShowImage("henk", &img);
-    //waitKey();
-    integrals = calculateIntegralHOG(&img);
+    //IplImage** integrals;
+    //IplImage img = IplImage(sized);
+	//IplImage img = sized;
 
+
+    //integrals = calculateIntegralHOG(&img);
+
+	//int normalization = 4;
+    //CvMat* img_feature_vector;
     //img_feature_vector = calculateHOG_window(integrals, cvRect(0, 0, window.width, window.height), normalization);
 
 
-
-
-    //imshow("clean", sized);
-    //imshow( "sub_face", handa);
-    //imshow( "head", head);/home/gijs/Work/sonic-vision/code/cpp/finder/finder
-    //imshow( "backproject", result );
-
-
+    //cvShowImage("henk", &img);
     //waitKey();
+
 
     /* Mat edges;
     namedWindow("edges",1);
@@ -145,7 +171,8 @@ int main(int, char**) {
         imshow("edges", edges);
         if(waitKey(30) >= 0) break;
     }
-    return 0; */
+	 */
+
 
 }
 

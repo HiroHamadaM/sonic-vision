@@ -3,9 +3,6 @@
 
 #include "cv.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 IplImage** calculateIntegralHOG(IplImage* in);
 void calculateHOG_rect(CvRect cell, CvMat* hog_cell, IplImage** integrals, int normalization);
@@ -18,10 +15,5 @@ CvMat* train_64x128(char *prefix, char *suffix, CvSize cell, CvSize window, int 
 CvMat* train_large(char *prefix, char *suffix, CvSize cell, CvSize window, int number_images, int horizontal_scans, int vertical_scans, int start_index, int end_index, char *savexml , int normalization );
 //void trainSVM(CvMat* pos_mat, CvMat* neg_mat, char *savexml, char *pos_file = NULL, char *neg_file = NULL);
 void trainSVM(CvMat* pos_mat, CvMat* neg_mat, char *savexml, char *pos_file , char *neg_file );
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
