@@ -1,4 +1,11 @@
 
+#ifndef _SKIN_H
+#define	_SKIN_H
+
+#include "cv.h"
+
+using namespace cv;
+
 struct Skin {
 public:
     Mat img, hsv, bw, facepixels;
@@ -12,3 +19,5 @@ public:
     void make_histogram();
     Rect face_region(Rect face);
 };
+
+#endif

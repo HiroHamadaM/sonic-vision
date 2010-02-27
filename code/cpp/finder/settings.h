@@ -1,0 +1,17 @@
+
+#ifndef _SETTINGS_H
+#define	_SETTGINS_H
+
+#define SKIN "../../../data/hand/skin.png"
+#define HEAD "../../../data/hand/head.png"
+#define HANDA "../../../data/hand/a.png"
+#define HANDB "../../../data/hand/b.png"
+#define HANDC "../../../data/hand/c.png"
+#define HANDD "../../../data/hand/d.png"
+#define FACEHAAR "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt.xml"
+//#define DEVICE "../../../data/movies/heiligenacht.mp4"
+#define DEVICE 0
+#define WORKSIZE 200
+#define XWINDOWS 3
+
+#endif
