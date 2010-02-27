@@ -1,7 +1,14 @@
 
 
-#include "hand.h"
+#include <iostream>
+#include <exception>
 
+#include "hand.h"
+#include "cv.h"
+#include "highgui.h"
+
+using namespace cv;
+using namespace std;
 
 
 Hand::Hand(const string& filename, MatND histogram) {

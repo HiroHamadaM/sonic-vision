@@ -1,9 +1,24 @@
-/*
- *  hand.h
- *  finder
- *
- *  Created by Gijs Molenaar on 2/27/10.
- *  Copyright 2010 __MyCompanyName__. All rights reserved.
- *
- */
 
+#ifndef _HAND_H
+#define	_HAND_H
+
+#include "cv.h"
+#include "cvaux.h"
+
+using namespace cv;
+
+
+struct Hand {
+public:
+    Mat img, hsv, backproj, cutout;
+	HOGDescriptor hog;
+	vector<float> descriptors;
+    Hand(const string& filename, MatND histogram);
+    void load_image(const string& filename);
+    void make_hsv();
+    void make_backproject(MatND histogram);
+    void make_cutout();
+	void find_hog();
+};
+
+#endif
