@@ -4,6 +4,7 @@
 
 #include "cv.h"
 #include "highgui.h"
+#include "limb.h"
 
 using namespace cv;
 
@@ -22,6 +23,8 @@ public:
     Rect face;
     vector<vector<Point> > contours;
 	vector<Point> face_contour;
+    Limb left_hand, right_hand, head;
+    
     Finder(VideoCapture c);
     void grab_frame();
     void find_face();
