@@ -11,8 +11,8 @@ using namespace cv;
 struct Hand {
 public:
     Mat img, hsv, backproj, cutout;
-	HOGDescriptor hog;
-	vector<float> descriptors;
+    HOGDescriptor hog;
+    vector<float> descriptors;
     Hand(const string& filename, MatND histogram);
     void load_image(const string& filename);
     void make_hsv();
