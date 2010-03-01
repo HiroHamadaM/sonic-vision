@@ -11,7 +11,7 @@
 #define FACEHAAR "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt.xml"
 //#define DEVICE "../../../data/movies/heiligenacht.mp4"
 #define DEVICE 0
-#define WORKSIZE 200
+#define WORKSIZE 300
 #define XWINDOWS 3
 
 #endif

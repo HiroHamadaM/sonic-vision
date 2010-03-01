@@ -6,6 +6,7 @@
 #include "finder.h"
 #include "tools.h"
 #include "settings.h"
+#include "limb.h"
 
 
 using namespace std;
@@ -45,8 +46,10 @@ void Finder::make_histogram() {
     const float sranges[] = { 0, 256 };
     const float* ranges[] = { hranges, sranges };
     int channels[] = {0, 1};
-    facepixels = hsv(face);
-    calcHist( &facepixels,  1, channels, Mat(), histogram, 2,  histSize, ranges );
+    if (!(face == Rect())) {
+        facepixels = hsv(face);
+        calcHist( &facepixels,  1, channels, Mat(), histogram, 2,  histSize, ranges );
+    }
 }
 
 void Finder::make_backproject() {
@@ -79,23 +82,35 @@ void Finder::find_face() {
     if (faces.size() > 0) {
         face = faces.at(0);
         face = sub_region(face);
+    } else {
+        face = Rect();
     }
 }
 
+
+
 void Finder::find_limbs() {
     Point facepoint = Point(face.x+face.width/2, face.y+face.height/2);
-    vector<float> sizes;
+    vector<Limb> limbs;
 
     for (unsigned int i = 0; i < contours.size(); i++) {
         vector<Point> contour = contours.at(i);
-        if (pointPolygonTest(contour, facepoint, false) > 0)
-            face_contour = contour;
-        
-        Point2f center;
-        float radius;
-        minEnclosingCircle(contour, center, radius);
-        cout << radius << endl;
-        sizes.push_back(radius);
+        if (pointPolygonTest(contour, facepoint, false) > 0) {
+            head = Limb(contour);
+            limbs.push_back(head);
+        } else {
+            limbs.push_back(Limb(contour));
+        }
+    }
+    sort(limbs.begin(), limbs.end(), compare_limbs);
+    for(unsigned int i = 0; i < limbs.size(); i++) {
+        if (limbs.at(i).contour == head.contour)
+            continue;
+        if (limbs.at(i).center.x < facepoint.x) {
+            left_hand = limbs.at(i);
+        } else {
+            right_hand = limbs.at(i);
+        }
     }
 }
 
@@ -105,10 +120,22 @@ void Finder::visualize() {
     small.copyTo(visuals, mask);
     rectangle(visuals, face.tl(), face.br(), Scalar(0, 255, 0));
 	
-    if (face_contour.size() > 0) {
+    if (head.contour.size() > 0) {
         vector<vector<Point> > cs;
-        cs.push_back(face_contour);
+        cs.push_back(head.contour);
         drawContours( visuals, cs, -1, Scalar( 0, 0, 255 ));
+    }
+
+    if (left_hand.contour.size() > 0) {
+        vector<vector<Point> > cs;
+        cs.push_back(left_hand.contour);
+        drawContours( visuals, cs, -1, Scalar( 0, 255, 0 ));
+    }    
+    
+    if (right_hand.contour.size() > 0) {
+        vector<vector<Point> > cs;
+        cs.push_back(right_hand.contour);
+        drawContours( visuals, cs, -1, Scalar( 255, 0, 0 ));
     }
     
     vector<Mat> presentation;
