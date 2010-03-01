@@ -4,7 +4,11 @@
 
 #include "cv.h"
 #include "highgui.h"
+#include "ml.h"
+
 #include "limb.h"
+#include "hand.h"
+#include "skin.h"
 
 using namespace cv;
 
@@ -22,8 +26,10 @@ public:
     vector<Rect> faces;
     Rect face;
     vector<vector<Point> > contours;
-	vector<Point> face_contour;
+    vector<Point> face_contour;
     Limb left_hand, right_hand, head;
+    vector<Hand> hands;
+    CvKNearest hand_matcher;
     
     Finder(VideoCapture c);
     void grab_frame();
@@ -35,6 +41,7 @@ public:
     void find_contours();
     void find_limbs();
     void match_hands();
+    void init_hands();
     void mainloop();
 };
 

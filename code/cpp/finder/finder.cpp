@@ -5,6 +5,7 @@
 
 #include "cv.h"
 #include "cvaux.h"
+#include "ml.h"
 
 #include "finder.h"
 #include "tools.h"
@@ -109,7 +110,8 @@ void Finder::find_limbs() {
     }
 
     sort(limbs.begin(), limbs.end(), compare_limbs);
-    right_hand, left_hand = Limb();
+    right_hand = Limb();
+    left_hand = Limb();
     // if we know the face
     if (!(face == Rect())) {
         //loop over 3 biggest limbs
@@ -183,17 +185,52 @@ void Finder::match_hands() {
         left_hand.compute_hog(small);
         Mat roi(limb_zoom, Rect(100, 90, left_hand.bw.cols, left_hand.bw.rows));
         left_hand.bw.copyTo(roi);
+
+        Mat test = Mat(left_hand.hog_descriptors).t();
+       float result = hand_matcher.find_nearest(&test, 3);
+
     }
 
     if (right_hand.contour.size() != 0) {
         right_hand.compute_hog(small);
-        //imshow("right hand", right_hand.bw);
         Mat roi(limb_zoom, Rect(250, 90, right_hand.bw.cols, right_hand.bw.rows));
         right_hand.bw.copyTo(roi);
     }
+
+
+}
+
+void Finder::init_hands() {
+    Skin skin(HEAD, FACEHAAR);
+    hands.push_back(Hand(HANDA, skin.histogram));
+    hands.push_back(Hand(HANDB, skin.histogram));
+    hands.push_back(Hand(HANDC, skin.histogram));
+    hands.push_back(Hand(HANDD, skin.histogram));
+
+    Mat hand_train(hands.at(0).descriptors.size(), hands.size(), CV_32FC1);
+    hand_train = Scalar(0);
+
+    for (unsigned int i = 0; i < hands.size(); i++) {
+        Hand hand = hands.at(i);
+        Mat r = hand_train.col(i);
+        Mat(hand.descriptors, true).copyTo(r);
+    }
+
+    hand_train = hand_train.t();
+
+    int m[4][1] = {{0}, {1}, {2}, {3}};
+    Mat hand_responses (4, 1, CV_32FC1, m);
+
+    hand_matcher = CvKNearest(hand_train, hand_responses);
+
 }
 
 void Finder::mainloop() {
+    setNumThreads(5);
+
+    init_hands();
+
+
     for(;;) {
         grab_frame();
         find_face();
