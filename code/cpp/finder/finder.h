@@ -12,8 +12,8 @@ using namespace cv;
 struct Finder {
 public:
     Mat frame, small, hsv, bw, backproj, mask;
-	Mat facepixels, visuals, combi, temp, blurred, morphed, th;
-    MatND histogram;
+    Mat facepixels, visuals, combi, temp, blurred, morphed, th, limb_zoom;
+    MatND histogram, new_hist, old_hist;
     VideoCapture cap;
     CascadeClassifier haar;
     Size frame_size;
@@ -34,6 +34,7 @@ public:
     void visualize();
     void find_contours();
     void find_limbs();
+    void match_hands();
     void mainloop();
 };
 
