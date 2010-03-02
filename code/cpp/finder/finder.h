@@ -29,7 +29,7 @@ public:
     vector<Point> face_contour;
     Limb left_hand, right_hand, head;
     vector<Hand> hands;
-    CvKNearest hand_matcher;
+    KNearest hand_matcher;
     
     Finder(VideoCapture c);
     void grab_frame();
