@@ -60,7 +60,7 @@ void Finder::make_histogram() {
         old_hist = new_hist;
         calcHist( &facepixels,  1, channels, Mat(), new_hist, 2,  histSize, ranges,  true, false );
         if (new_hist.type() == old_hist.type()) {
-            double diff = compareHist(new_hist, old_hist, CV_COMP_BHATTACHARYYA);
+            //double diff = compareHist(new_hist, old_hist, CV_COMP_BHATTACHARYYA);
             add(new_hist, old_hist, histogram);
         } 
         histogram = new_hist;
@@ -76,7 +76,11 @@ void Finder::make_mask() {
     normalize(backproj, backproj, 0, 255, NORM_MINMAX);
     GaussianBlur( backproj, blurred, Size(31, 31), 0);
     threshold(blurred, th, 20, 255, THRESH_BINARY);
-    morphologyEx(th, mask, MORPH_CLOSE, Mat());
+    int dia = WORKSIZE/15 + 1;
+    Mat kernel = Mat(dia, dia, CV_8U, 1);
+    //morphologyEx(th, mask, MORPH_CLOSE, Mat());
+    cout << ceil(dia/2.0) << endl;
+    dilate(th, mask, kernel, Point(ceil(dia/2.0), ceil(dia/2.0)));
 }
 
 void Finder::find_contours() {
@@ -84,8 +88,11 @@ void Finder::find_contours() {
 }
 	
 void Finder::find_face() {
-    haar.detectMultiScale(small, faces, 1.2, 2, CV_HAAR_SCALE_IMAGE +
-        CV_HAAR_DO_CANNY_PRUNING + CV_HAAR_FIND_BIGGEST_OBJECT, Size(10, 10) );
+    //haar.detectMultiScale(small, faces, 1.2, 2, CV_HAAR_SCALE_IMAGE +
+    //    CV_HAAR_DO_CANNY_PRUNING + CV_HAAR_FIND_BIGGEST_OBJECT, Size(WORKSIZE/10, WORKSIZE/10) );
+    haar.detectMultiScale(small, faces, 1.3, 3, CV_HAAR_DO_CANNY_PRUNING +
+                          CV_HAAR_FIND_BIGGEST_OBJECT, Size(WORKSIZE/10, WORKSIZE/10) );
+
     if (faces.size() > 0) {
         face = faces.at(0);
         face = sub_region(face);
@@ -112,6 +119,7 @@ void Finder::find_limbs() {
     sort(limbs.begin(), limbs.end(), compare_limbs);
     right_hand = Limb();
     left_hand = Limb();
+
     // if we know the face
     if (!(face == Rect())) {
         //loop over 3 biggest limbs
@@ -125,9 +133,31 @@ void Finder::find_limbs() {
             }
         }
     }else {
-        // TODO: sort limbs by x position and stuff
+        
+        if (limbs.size() > 2) {
+            vector<Limb>  three_limbs;
+            for(int i=0; i<3; i++) {
+                three_limbs.push_back(limbs.at(i));
+            }
+            sort(three_limbs.begin(), three_limbs.end(), compare_limbs_xpos);
+            left_hand = three_limbs.at(0);
+            head = three_limbs.at(1);
+            right_hand = three_limbs.at(2);
+
+        } else if (limbs.size() == 2) {
+            head = limbs.at(0);
+            Limb hand = limbs.at(1);
+            if (hand.center.x < head.center.x) {
+                left_hand = hand;
+            } else {
+                right_hand = hand;
+            }
+
+        } else if (limbs.size() == 1) {
+            head = limbs.at(0);
+        }
     }
-}
+};
 
 void Finder::visualize() {
     small.copyTo(visuals);
@@ -187,7 +217,7 @@ void Finder::match_hands() {
         left_hand.bw.copyTo(roi);
 
         Mat test = Mat(left_hand.hog_descriptors).t();
-       float result = hand_matcher.find_nearest(&test, 3);
+        //float result = hand_matcher.find_nearest(&test, 3);
 
     }
 
@@ -221,32 +251,30 @@ void Finder::init_hands() {
     int m[4][1] = {{0}, {1}, {2}, {3}};
     Mat hand_responses (4, 1, CV_32FC1, m);
 
-    hand_matcher = CvKNearest(hand_train, hand_responses);
+    hand_matcher = KNearest(hand_train, hand_responses);
 
 }
 
 void Finder::mainloop() {
-    setNumThreads(5);
-
     init_hands();
 
-
     for(;;) {
+        double t = (double)getTickCount();
+        
         grab_frame();
         find_face();
         make_histogram();
         make_backproject();
         make_mask();
-	find_contours();
+        find_contours();
         find_limbs();
         match_hands();
         visualize();
-
         imshow("Sonic Gesture", combi);
-
-
-		
-        if(waitKey(4) >= 0)
+        
+        t = ((double)getTickCount() - t)*1000/getTickFrequency();
+        int wait = MIN(40, MAX(40-(int)t, 4)); // Wait max of 40 ms, min of 4;
+        if(waitKey(wait) >= 0)
             break;
     }
 }

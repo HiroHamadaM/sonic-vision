@@ -16,5 +16,5 @@ int main(int, char**) {
     VideoCapture cap(DEVICE);
     Finder finder(cap);
     finder.mainloop();
-    return 0;
+    return EXIT_SUCCESS;
 }
