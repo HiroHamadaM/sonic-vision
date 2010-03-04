@@ -1,9 +1,11 @@
 
+#include <iostream>
 
 #include "tools.h"
 #include "cv.h"
 
 using namespace cv;
+using namespace std;
 
 
 float sum(const vector<float>& x) {
@@ -21,3 +23,14 @@ Rect sub_region(Rect region) {
     r.height = region.height * 0.7;
     return r;
 }
+
+void show_mat(Mat M) {
+    for (int y=0; y < M.rows; y++) {
+        for (int x=0; x < M.cols; x++) {
+            float val = M.at<float>(y, x);
+            cout << val << " ";
+        }
+        cout << endl;
+    }
+}
+
