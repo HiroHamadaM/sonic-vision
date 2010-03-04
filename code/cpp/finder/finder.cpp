@@ -76,10 +76,9 @@ void Finder::make_mask() {
     normalize(backproj, backproj, 0, 255, NORM_MINMAX);
     GaussianBlur( backproj, blurred, Size(31, 31), 0);
     threshold(blurred, th, 20, 255, THRESH_BINARY);
-    int dia = WORKSIZE/15 + 1;
+    int dia = WORKSIZE/20 + 1;
     Mat kernel = Mat(dia, dia, CV_8U, 1);
     //morphologyEx(th, mask, MORPH_CLOSE, Mat());
-    cout << ceil(dia/2.0) << endl;
     dilate(th, mask, kernel, Point(ceil(dia/2.0), ceil(dia/2.0)));
 }
 
@@ -213,11 +212,22 @@ void Finder::match_hands() {
     limb_zoom = Scalar(0);
     if (left_hand.contour.size() != 0) {
         left_hand.compute_hog(small);
-        Mat roi(limb_zoom, Rect(100, 90, left_hand.bw.cols, left_hand.bw.rows));
+        Mat roi(limb_zoom, Rect(20, 90, left_hand.bw.cols, left_hand.bw.rows));
         left_hand.bw.copyTo(roi);
 
         Mat test = Mat(left_hand.hog_descriptors).t();
-        //float result = hand_matcher.find_nearest(&test, 3);
+        CvMat cvtest = test;
+        //show_mat(test);
+        CvMat* nearests = cvCreateMat( 1, 1, CV_32FC1);
+
+        test = Mat(1, 3780, CV_32FC1);
+        test = Scalar(3);
+        int response = hand_matcher.find_nearest(&cvtest,1, 0, 0, nearests, 0);
+        cout << response << endl;
+        Hand found_hand = hands.at(response);
+        Mat found_hand_img = found_hand.cutout;
+        roi = Mat(limb_zoom, Rect(100, 90, found_hand_img.cols, found_hand_img.rows));
+        found_hand_img.copyTo(roi);
 
     }
 
@@ -237,21 +247,21 @@ void Finder::init_hands() {
     hands.push_back(Hand(HANDC, skin.histogram));
     hands.push_back(Hand(HANDD, skin.histogram));
 
-    Mat hand_train(hands.at(0).descriptors.size(), hands.size(), CV_32FC1);
-    hand_train = Scalar(0);
-
+    Mat knn_train(hands.at(0).descriptors.size(), hands.size(), CV_32FC1);
     for (unsigned int i = 0; i < hands.size(); i++) {
         Hand hand = hands.at(i);
-        Mat r = hand_train.col(i);
-        Mat(hand.descriptors, true).copyTo(r);
+        Mat handmat(hand.descriptors);
+        Mat r = knn_train.col(i);
+        handmat.copyTo(r);
     }
+    knn_train = knn_train.t();
 
-    hand_train = hand_train.t();
+    float v[1][4] = {{0, 1, 2, 3}};
+    Mat knn_class(4, 1, CV_32FC1, v);
+    knn_class = knn_class.t();
 
-    int m[4][1] = {{0}, {1}, {2}, {3}};
-    Mat hand_responses (4, 1, CV_32FC1, m);
-
-    hand_matcher = KNearest(hand_train, hand_responses);
+    hand_matcher = KNearest();
+    hand_matcher.train(knn_train, knn_class);
 
 }
 
