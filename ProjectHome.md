@@ -1,0 +1,1 @@
+This project has been renamed to Sonic Gesture, and [on a new project site](http://code.google.com/p/sonic-gesture/).
